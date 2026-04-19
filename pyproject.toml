@@ -1,0 +1,27 @@
+[project]
+name = "simple-workflow-with-langgraph"
+version = "0.1.0"
+description = "Minimal LangGraph weather workflow demo with intent classification and routing"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "langgraph>=0.2.60",
+  "langchain-openai>=0.2.14",
+  "python-dotenv>=1.0.1",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = [
+  "app",
+  "cli",
+  "config",
+  "graph",
+  "llm",
+  "logging_utils",
+  "models",
+  "weather",
+]
