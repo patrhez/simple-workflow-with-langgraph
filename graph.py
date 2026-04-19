@@ -1,13 +1,73 @@
 from __future__ import annotations
 
+import json
+import re
+
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import END, START, StateGraph
+from pydantic import ValidationError
 
 from config import DEFAULT_WEATHER_LOCATION
 from llm import build_llm, log_llm_exchange
 from logging_utils import LOGGER, log_call
 from models import IntentDecision, WorkflowState
 from weather import format_weather_error, get_weather
+
+
+@log_call
+def extract_text_content(content) -> str:
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        text_parts: list[str] = []
+        for part in content:
+            if isinstance(part, dict) and part.get("type") == "text":
+                text_parts.append(str(part.get("text", "")))
+            else:
+                text_parts.append(str(part))
+        return "\n".join(part for part in text_parts if part).strip()
+    return str(content).strip()
+
+
+@log_call
+def parse_intent_from_text(raw_text: str) -> IntentDecision:
+    json_match = re.search(r"\{.*\}", raw_text, re.DOTALL)
+    if json_match:
+        try:
+            return IntentDecision.model_validate_json(json_match.group(0))
+        except ValidationError:
+            LOGGER.warning("Fallback JSON parse failed for classifier response: %s", raw_text)
+
+    intent_match = re.search(
+        r"(?:^|\n)\s*(?:intent|意图)\s*[:：]\s*(weather|chat|unknown)\s*(?:$|\n)",
+        raw_text,
+        re.IGNORECASE,
+    )
+    location_match = re.search(
+        r"(?:^|\n)\s*(?:location|地点|位置)\s*[:：]\s*(.+?)\s*(?:$|\n)",
+        raw_text,
+        re.IGNORECASE,
+    )
+
+    if not intent_match:
+        raise ValueError(f"Could not parse classifier response: {raw_text}")
+
+    intent = intent_match.group(1).lower()
+    location = location_match.group(1).strip() if location_match else ""
+    return IntentDecision(intent=intent, location=location)
+
+
+@log_call
+def invoke_classifier(llm, messages) -> IntentDecision:
+    structured_llm = llm.with_structured_output(IntentDecision)
+    try:
+        return structured_llm.invoke(messages)
+    except Exception as exc:
+        LOGGER.warning("Structured classifier output failed, falling back to text parsing: %s", exc)
+        raw_response = llm.invoke(messages)
+        raw_text = extract_text_content(raw_response.content)
+        LOGGER.info("LLM FALLBACK RESPONSE raw_text=%s", raw_text)
+        return parse_intent_from_text(raw_text)
 
 
 @log_call
@@ -35,10 +95,9 @@ def classify_intent(state: WorkflowState) -> WorkflowState:
     )
 
     llm = build_llm()
-    structured_llm = llm.with_structured_output(IntentDecision)
     messages = prompt.invoke({"user_input": state["user_input"]}).to_messages()
     LOGGER.info("LLM TARGET model=%s base_url=%s", llm.model_name, llm.openai_api_base)
-    decision = structured_llm.invoke(messages)
+    decision = invoke_classifier(llm, messages)
     log_llm_exchange(messages, decision)
     return {
         "intent": decision.intent,
