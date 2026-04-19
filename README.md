@@ -24,6 +24,17 @@ In this app:
 
 That means you can see and control exactly how the program moves from one step to the next.
 
+## Reference Project
+
+LangChain mirror project:
+
+- [simple-weather-app-with-langchain](https://github.com/patrhez/simple-weather-app-with-langchain)
+
+Essential difference:
+
+- This LangGraph project models control flow explicitly with state + nodes + conditional edges.
+- The LangChain mirror project relies on an agent loop where tool-use control flow is implicit.
+
 ## Workflow
 
 ```text
