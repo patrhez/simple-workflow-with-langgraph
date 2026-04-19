@@ -20,5 +20,11 @@ def main() -> None:
         if user_input.lower() in {"exit", "quit"}:
             break
 
-        result = graph.invoke({"user_input": user_input})
-        print(f"Assistant: {result['final_response']}\n")
+        try:
+            result = graph.invoke({"user_input": user_input})
+            print(f"Assistant: {result['final_response']}\n")
+        except Exception:
+            print(
+                "Assistant: Something went wrong while processing that request. "
+                "Please try again with a clearer location or a different question.\n"
+            )

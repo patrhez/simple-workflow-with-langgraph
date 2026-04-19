@@ -7,7 +7,7 @@ from config import DEFAULT_WEATHER_LOCATION
 from llm import build_llm, log_llm_exchange
 from logging_utils import LOGGER, log_call
 from models import IntentDecision, WorkflowState
-from weather import get_weather
+from weather import format_weather_error, get_weather
 
 
 @log_call
@@ -59,7 +59,10 @@ def route_intent(state: WorkflowState) -> str:
 @log_call
 def weather_node(state: WorkflowState) -> WorkflowState:
     location = state.get("location") or DEFAULT_WEATHER_LOCATION
-    forecast = get_weather.invoke({"location": location})
+    try:
+        forecast = get_weather.invoke({"location": location})
+    except Exception:
+        forecast = format_weather_error(location)
     return {
         "weather_result": forecast,
         "final_response": forecast,

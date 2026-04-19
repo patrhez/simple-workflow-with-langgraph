@@ -53,21 +53,49 @@ def fetch_json(url: str, params: dict[str, Any]) -> dict[str, Any]:
 
 
 @log_call
-def resolve_location(location: str) -> dict[str, Any]:
+def build_location_search_candidates(location: str) -> list[str]:
     search_term = location.strip() or DEFAULT_WEATHER_LOCATION
-    payload = fetch_json(
-        GEOCODING_API_URL,
-        {
-            "name": search_term,
-            "count": 1,
-            "language": "en",
-            "format": "json",
-        },
+    candidates: list[str] = [search_term]
+
+    if "省" in search_term:
+        candidates.append(search_term.split("省")[-1].strip())
+    if "市" in search_term:
+        city_with_suffix = search_term[: search_term.rfind("市") + 1].split()[-1].strip()
+        candidates.append(city_with_suffix)
+        candidates.append(city_with_suffix.removesuffix("市"))
+    if "," in search_term:
+        candidates.append(search_term.split(",")[-1].strip())
+    if "，" in search_term:
+        candidates.append(search_term.split("，")[-1].strip())
+
+    seen: set[str] = set()
+    unique_candidates: list[str] = []
+    for candidate in candidates:
+        normalized = candidate.strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            unique_candidates.append(normalized)
+    return unique_candidates
+
+
+@log_call
+def resolve_location(location: str) -> dict[str, Any]:
+    candidates = build_location_search_candidates(location)
+    for candidate in candidates:
+        payload = fetch_json(
+            GEOCODING_API_URL,
+            {
+                "name": candidate,
+                "count": 1,
+                "format": "json",
+            },
+        )
+        results = payload.get("results") or []
+        if results:
+            return results[0]
+    raise ValueError(
+        f"No Open-Meteo geocoding result found for location '{location.strip() or DEFAULT_WEATHER_LOCATION}'."
     )
-    results = payload.get("results") or []
-    if not results:
-        raise ValueError(f"No Open-Meteo geocoding result found for location '{search_term}'.")
-    return results[0]
 
 
 @log_call
@@ -144,3 +172,11 @@ def get_weather(location: str) -> str:
     resolved_location = resolve_location(location)
     forecast = fetch_weather_forecast(resolved_location)
     return format_weather_report(resolved_location, forecast)
+
+
+@log_call
+def format_weather_error(location: str) -> str:
+    return (
+        f"I couldn't find weather data for '{location}'. "
+        "Try a more specific city name or an English place name."
+    )
