@@ -92,5 +92,6 @@ Example prompts:
 - The LLM is only used for intent classification and location extraction.
 - The routing logic is explicit and deterministic after classification.
 - The app logs function inputs, return values, LLM request/response payloads, and Open-Meteo HTTP request/response payloads.
+- Logging is off by default. Set `APP_LOGGING=true` to enable detailed traces.
 - You can override the default endpoint with `MOONSHOT_BASE_URL`.
 - `kimi-k2.5` only accepts temperature `1`, so this project defaults to `1.0`.

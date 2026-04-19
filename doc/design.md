@@ -285,6 +285,7 @@ The logs show each transition with inputs and outputs, which makes it easier to 
 - `MOONSHOT_MODEL`: optional, defaults to `kimi-k2.5`
 - `MOONSHOT_BASE_URL`: optional, defaults to `https://api.moonshot.cn/v1`
 - `MOONSHOT_TEMPERATURE`: optional, defaults to `1.0`
+- `APP_LOGGING`: optional, defaults to `false`; set to `true` to enable detailed logs
 
 ## External APIs
 

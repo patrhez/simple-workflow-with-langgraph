@@ -9,6 +9,7 @@ DEFAULT_TEMPERATURE = 1.0
 GEOCODING_API_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_API_URL = "https://api.open-meteo.com/v1/forecast"
 DEFAULT_WEATHER_LOCATION = "Beijing"
+DEFAULT_LOGGING_ENABLED = False
 
 
 def get_moonshot_api_key() -> str:
@@ -28,3 +29,8 @@ def get_base_url() -> str:
 
 def get_temperature() -> float:
     return float(os.getenv("MOONSHOT_TEMPERATURE", str(DEFAULT_TEMPERATURE)))
+
+
+def is_logging_enabled() -> bool:
+    raw_value = os.getenv("APP_LOGGING", str(DEFAULT_LOGGING_ENABLED)).strip().lower()
+    return raw_value in {"1", "true", "yes", "on"}

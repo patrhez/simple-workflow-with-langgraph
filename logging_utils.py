@@ -9,15 +9,18 @@ from langchain_core.messages import BaseMessage
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
+from config import is_logging_enabled
+
 
 LOGGER = logging.getLogger("weather_app")
 
 
 def configure_logging() -> None:
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.INFO if is_logging_enabled() else logging.WARNING,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     )
+    LOGGER.disabled = not is_logging_enabled()
 
 
 def serialize_for_log(value: Any) -> str:
